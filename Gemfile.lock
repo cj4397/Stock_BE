@@ -117,7 +117,6 @@ GEM
     nio4r (2.5.9)
     nokogiri (1.15.3-x86_64-linux)
       racc (~> 1.4)
-    oj (3.16.0)
     orm_adapter (0.5.0)
     puma (5.6.6)
       nio4r (~> 2.0)
@@ -200,7 +199,6 @@ DEPENDENCIES
   bootsnap
   debug
   devise (~> 4.9)
-  oj
   puma (~> 5.0)
   rack-cors
   rails (~> 7.0.6)
