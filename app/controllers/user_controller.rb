@@ -30,7 +30,7 @@ class UserController < ApplicationController
             if @trader.save 
                 @user.save
                 @request.save
-                render json: {trader:Trader.all}, status:200
+                render json: {message: "Trader successfully registered"}, status:200
             else
                 render json: {message: "Edit failed"},status:400
             end
@@ -52,16 +52,24 @@ class UserController < ApplicationController
             @user = User.new(user_params)
             @user.password = params[:password] 
             @user.admin 
+
             if  @user.save
                 
-                if @user.check?
-                    render json: { user:@user.name, token: @user.token, admin:true}, status: 200
-                else
-                    render json: { user:@user.name, token: @user.token}, status: 200
-                end
+                    if @user.check?
+                        render json: { user:@user.name, token: @user.token, admin:true}, status: 200
+                    else
+                      
+                       if UserMailer.with(user: @user).welcome_email.deliver_now
+                        render json: { user:@user.name, token: @user.token}, status: 200
+                       else
+                        render json: { message:"error"}, status: 400
+                       end
+                    end
+               
             else
                 render json:{ message: "Email invalid/duplicated", users:User.all}, status: 400
-            end
+            end 
+    
     end
 
 
@@ -83,29 +91,29 @@ class UserController < ApplicationController
     end
 
 
-    def update
-        @user = User.find_by_email(params[:email])
-        if @user
-            if @user.update(user_params)
-                render json: { user:@user.name, token: @user.token}, status: 200
-            else
-                render json: {message: "Edit failed"},status:400
-            end
-        else
-            render json: {message: "no such email is registered"},status:400
-        end
-    end
+    # def update
+    #     @user = User.find_by_email(params[:email])
+    #     if @user
+    #         if @user.update(user_params)
+    #             render json: { user:@user.name, token: @user.token}, status: 200
+    #         else
+    #             render json: {message: "Edit failed"},status:400
+    #         end
+    #     else
+    #         render json: {message: "no such email is registered"},status:400
+    #     end
+    # end
 
 
-    def delete
-        @user = User.find_by_email(params[:email])
-        if @user
-             @user.destroy
-            render json: {message:"destroyed"}, status:200
-        else
-            render json: {message: "no such email is registered"}, status:400
-        end
-    end
+    # def delete
+    #     @user = User.find_by_email(params[:email])
+    #     if @user
+    #          @user.destroy
+    #         render json: {message:"destroyed"}, status:200
+    #     else
+    #         render json: {message: "no such email is registered"}, status:400
+    #     end
+    # end
 
 private
     def check_auth

@@ -3,8 +3,8 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "articles#index"
-  put '/stock_update' =>'stock#update_stock'
-  get '/stocks' => 'stock#create_market_stocks'
+  
+  get '/market' => 'stock#create_market_stocks'
 
   post '/trader' => 'user#trader'
   post '/create' => 'user#create'
@@ -20,6 +20,8 @@ Rails.application.routes.draw do
   
   post '/transaction/create' => 'transaction_history#create'
   post '/transaction/sell' => 'transaction_history#sell'
+
+
 
 
 end
