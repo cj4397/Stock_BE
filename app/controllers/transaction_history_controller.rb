@@ -8,22 +8,29 @@ class TransactionHistoryController < ApplicationController
 
     def create
         @trader= Trader.find_by_name(params[:trader])
-        @available=@trader.stock.find_by_name(params[:name])
-        @asset=(params[:invest].fdiv(params[:amount])).round(3)
 
         if @trader
+             @available=@trader.stock.find_by_name(params[:name])
             if @available
                 @item=Stock.find_by_id(@available.id)
+
+                 @calculator=SmrCalculator.new(
+                        params[:amount],
+                        params[:invest],
+                        params[:sell],
+                        @item,
+                        @available
+                    )
+
                 if @stock=@item.update(
-                    :amount => ((@item.asset + @asset) * params[:amount]), 
-                    :percent_change => params[:percent_change],
-                    :asset => (@available.asset.to_f + @asset).round(3),
+                    :amount =>@calculator.amount, 
+                    :asset => @calculator.add_asset,
                 )
 
                      @data={
                         :name => @trader.name,
-                        :invest => (@asset * params[:amount]),
-                        :bought => @asset
+                        :invest => @calculator.invest,
+                        :bought => @calculator.asset
                     }
                     @history=TransactionHistory.new(
                         :trader_info => @data.to_json,
@@ -49,23 +56,27 @@ class TransactionHistoryController < ApplicationController
                      render json:{error:'stock not saved', trader:@trader}, status:400
                 end
 
-
-
             else
+                @calculator=SmrCalculator.new(
+                    params[:amount],
+                    params[:invest],
+                    params[:sell],
+                    @item,
+                    @available
+                )
+
                 @stock=Stock.new(
                 :name => params[:name], 
                 :currency => params[:currency], 
-                :amount => (@asset * params[:amount]), 
-              
+                :amount => @calculator.invest, 
                 :symbol => params[:symbol],
-           
-                :asset => @asset,
+                :asset => @calculator.asset,
                 :trader_id => @trader.id
                 )
                  if @stock.save
                         @data={
                             :name => @trader.name,
-                            :invest => (@asset * params[:amount]),
+                            :invest => @calculator.invest,
                             :bought => @asset
                         }
                         @history=TransactionHistory.new(
@@ -101,23 +112,31 @@ class TransactionHistoryController < ApplicationController
 
     def sell
          @trader= Trader.find_by_name(params[:trader])
-         @available=@trader.stock.find_by_name(params[:name])
-         @money=(params[:amount]*params[:sell])
+        @available=@trader.stock.find_by_name(params[:name])
+         @item=Stock.find_by_id(@available.id)
          
          if @trader
+             @available=@trader.stock.find_by_name(params[:name])
             if @available
                 @item=Stock.find_by_id(@available.id)
+
+                    @calculator=SmrCalculator.new(
+                        params[:amount],
+                        params[:invest],
+                        params[:sell],
+                        @item,
+                        @available
+                    )
+
                 if @item.asset > params[:sell]
-                    @result= (@item.asset - params[:sell]).round(3)
+                
                     if @item.update(
-                            :amount => (@result * params[:amount]), 
-                            :volume => params[:volume], 
-                            :percent_change => params[:percent_change],
-                            :asset => @result
+                            :amount => @calculator.total_invest, 
+                            :asset => @calculator.sub_asset
                     )
                         @data={
                             :name => @trader.name,
-                            :invest => @money,
+                            :invest => @calculator.total_invest,
                             :bought => -(params[:sell])
                         }
                         @history=TransactionHistory.new(
@@ -134,7 +153,7 @@ class TransactionHistoryController < ApplicationController
                             :trader_id => @trader.id
                         )
                         if @history.save
-                           render json: {money:(params[:amount]*params[:sell])}
+                           render json: {message:'history is saved', trader:@trader}
                         else
                             render json: {error:'history is not ssaved',history:TransactionHistory.all, trader:@trader}, status:400
                         end
@@ -147,7 +166,7 @@ class TransactionHistoryController < ApplicationController
                     if @item.destroy
                         @data={
                             :name => @trader.name,
-                            :invest => (params[:amount]*params[:sell]),
+                            :invest => @calculator.total_invest,
                             :bought => -(params[:sell])
                         }
                         @history=TransactionHistory.new(
@@ -164,7 +183,7 @@ class TransactionHistoryController < ApplicationController
                             :trader_id => @trader.id
                         )
                         if @history.save
-                           render json: {money:(params[:amount]*params[:sell])}
+                           render json: {trader:@trader}
                         else
                             render json: {error:'history is not ssaved',history:TransactionHistory.all, trader:@trader}, status:400
                         end
@@ -184,6 +203,7 @@ class TransactionHistoryController < ApplicationController
     end
 
    
+
 
 
 

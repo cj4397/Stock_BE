@@ -9,15 +9,9 @@ class Stock < ApplicationRecord
 
     belongs_to :trader , optional:true
 
-    # after_create :create_transac
 
-    def random_asset
-        rand(1..20)
-    end
-
-# def create_transac
-
-# end
+  end
 
 
-end
+
+

@@ -19,44 +19,25 @@ class StockController < ApplicationController
                 @high.push(x)
             end
         end
-        render json:{low:@low,mid:@mid,high:@high }
+        render json:{low:{
+            name:"Low Market",
+            details:"For Start-Up Businesses",
+            stock: @low,
+        },
+            mid:{
+            name:"Mid Market",
+            details:"For Rising Businesses",
+            stock: @mid,
+        },
+            high:{
+            name:"High Market",
+            details:"For Big and Known Businesses",
+            stock: @high,
+        }, }
     end
 
     
 
-    def update_stock
-        @stocks = Net::HTTP.get(URI.parse('https://phisix-api4.appspot.com/stocks.json'))
-        @x=JSON.parse(@stocks)
-        @stock=@x["stock"]
-        @stock.each do |x|
-            @item=Stock.find_by_name(x["name"])
-            if @item.trader_id.nil? 
-                @item.update(
-                    :amount => x["price"]["amount"],
-                    :volume => x["volume"], 
-                    :percent_change => x["percent_change"],
-                    
-                )
-                @item.save
-            else
-                @item.update(
-                    :amount => x["price"]["amount"],
-                    :volume => x["volume"], 
-                    :percent_change => x["percent_change"],
-                )
-                @item.save
-            end
-         end
-         render json:{market:Market.all, stock:Stock.all}
-    end
+   
 
-
-
-
-
-    private 
-
-    def stock_params
-        params.require(:stock).permit(:name, :currency, :amount, :volume, :symbol, :percent_change, :asset)
-    end
 end
