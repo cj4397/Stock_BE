@@ -77,7 +77,7 @@ class TransactionHistoryController < ApplicationController
                         @data={
                             :name => @trader.name,
                             :invest => @calculator.invest,
-                            :bought => @asset
+                            :bought => @calculator.asset
                         }
                         @history=TransactionHistory.new(
                             :trader_info => @data.to_json,
@@ -136,7 +136,7 @@ class TransactionHistoryController < ApplicationController
                     )
                         @data={
                             :name => @trader.name,
-                            :invest => @calculator.total_invest,
+                            :invest => @calculator.sell_amount,
                             :bought => -(params[:sell])
                         }
                         @history=TransactionHistory.new(

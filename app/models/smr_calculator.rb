@@ -33,4 +33,8 @@ class SmrCalculator
     (sub_asset * @amount)
   end
 
+  def sell_amount
+    (@sell * @amount)
+  end
+
 end
