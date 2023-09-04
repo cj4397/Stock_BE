@@ -6,13 +6,14 @@ RSpec.describe "Users", type: :request do
         User.create(
         name: "name",
         email: "user_email.com",
-        password: "password")
-      end
+        password: "password"
+      )
+    end
   
     describe 'POST user#create' do
 
       before do
-        post '/user', params: {
+        post '/create', params: {
           user:{
                 name:"new_user",
                 email: "new_user_email.com",
@@ -27,8 +28,21 @@ RSpec.describe "Users", type: :request do
         expect(json_response.keys).to match_array(["user", "token"])
       end
 
+      it 'creates new admin' do
+            post '/create', params: {
+                user:{
+                      name:"user_admin",
+                      email: "admin_email.com",
+                      password: "password"
+                  }
+            }
+            expect(response).to have_http_status :ok
+            json_response = JSON.parse(response.body)
+            expect(json_response.keys).to match_array(["user", "token", "admin"])
+      end
+
       it 'gives error for duplicate user' do
-        post '/user', params: {
+        post '/create', params: {
           user:{
                 name:"user",
                 email: "new_user_email.com",
@@ -39,12 +53,21 @@ RSpec.describe "Users", type: :request do
         expect(JSON.parse(response.body)).to eq ({"message"=>"Email invalid/duplicated"})
       end
 
+
+
     end
 
     describe "POST user#signin" do
+      before do
+        User.create(
+        name: "name_admin",
+        email: "admin_email.com",
+        password: "password",
+        is_admin: true)
+      end
 
       it 'sign in user' do
-         post '/user/signin', params: {
+         post '/sign-in', params: {
                 email: "user_email.com",
                 password: "password"
         }
@@ -54,8 +77,19 @@ RSpec.describe "Users", type: :request do
           expect(json_response.keys).to match_array(["user", "token"])
       end
 
+      it 'sign in admin' do
+        
+            post '/sign-in', params: {
+                email: "admin_email.com",
+                password: "password"
+            }
+            expect(response).to have_http_status :ok
+            json_response = JSON.parse(response.body)
+            expect(json_response.keys).to match_array(["user", "token", "admin"])
+      end
+
       it 'wrong password' do
-         post '/user/signin', params: {
+         post '/sign-in', params: {
                 email: "user_email.com",
                 password: "new_password"
         }
@@ -65,7 +99,7 @@ RSpec.describe "Users", type: :request do
       end
 
       it 'wrong/invalid email' do
-         post '/user/signin', params: {
+         post '/sign-in', params: {
                 email: "user.com",
                 password: "new_password"
         }
@@ -75,63 +109,121 @@ RSpec.describe "Users", type: :request do
       end
     end
 
-    describe "PUT user#update" do
+
+    describe "POST user#transaction" do
       
-      it "edits the user data" do
-        put '/user/profile', params: {
-               email: "user_email.com",
-                user:{
-                  name:"new_name",
-                  email:"user_email.com",
-                  password:"password"
-                }
+      it "it verify admin and gives trader data" do
+        post '/create', params: {
+          user:{
+                name:"new_admin",
+                email: "email.com",
+                password: "password"
+            }
         }
+        json_response = JSON.parse(response.body)
+        token=json_response['token']
+      
+        post '/transactions', params: {
+          token:token
+        }  
+
         expect(response).to have_http_status :ok
         json_response = JSON.parse(response.body)
-        expect(json_response.keys).to match_array(["user", "token"])
+        expect(json_response.keys).to match_array(["transaction"])
       end
 
-      it "user data fails" do
-        put '/user/profile', params: {
-                email: "user_email.com",
-                user:{
-                  name:"new_name",
-                  email:"",
-                  password:"password"
-                }
+      it "ivalid admin token" do 
+         post '/transactions', params: {
+          token:'321a32sd4f56s4adf5'
         }
         expect(response).to have_http_status(400)
-          expect(JSON.parse(response.body)).to eq ({"message"=>"Edit failed"})
+        expect(JSON.parse(response.body)).to eq ({"error"=>"invalid token"})
       end
 
-      it "wrong/invalid email" do
-        put '/user/profile', params: {
+      it "not admin" do 
+         post '/create', params: {
+          user:{
+                name:"new_user",
                 email: "email.com",
-                user:{
-                  name:"new_name",
-                  email:"",
-                  password:"password"
-                }
+                password: "password"
+            }
+        }
+        json_response = JSON.parse(response.body)
+        token=json_response['token']
+      
+        post '/transactions', params: {
+          token:token
         }
         expect(response).to have_http_status(400)
-        expect(JSON.parse(response.body)).to eq ({"message"=>"no such email is registered"})
+        expect(JSON.parse(response.body)).to eq ({"error"=>"unauthorized"})
       end
+
     end
 
-    describe "DELETE user#destroy" do
-      it "delete the user data" do
-        delete '/user/delete', params: {
-               email: "user_email.com",
+    describe "POST user#admin" do
+
+        it "shows requests" do
+          post '/create', params: {
+            user:{
+                  name:"new_admin",
+                  email: "email.com",
+                  password: "password"
+              }
+          }
+          json_response = JSON.parse(response.body)
+          token=json_response['token']
+        
+          post '/admin', params: {
+            token:token
+          }
+          expect(response).to have_http_status :ok
+          json_response = JSON.parse(response.body)
+          expect(json_response.keys).to match_array(["users", "request"])
+        end
+
+    end
+
+    describe "PUT user#admin_confirm" do
+
+      before do
+        post '/create', params: {
+            user:{
+                  name:"new_user",
+                  email: "useremail.com",
+                  password: "password"
+              }
+          }
+          json_response = JSON.parse(response.body)
+          token=json_response['token']
+
+        post '/request', params:{
+                token: token,
+                nickname:"name"
         }
-        expect(response).to have_http_status :ok
-        expect(JSON.parse(response.body)).to eq ({"message"=>"destroyed"})
       end
-       it "wrong/invalid email" do
-        delete '/user/delete', params: {
-                email: "email.com",
-        }
-        expect(response).to have_http_status(400)
-        expect(JSON.parse(response.body)).to eq ({"message"=>"no such email is registered"})
+
+      it "admin confirms and create trader" do
+        
+        
+          post '/create', params: {
+            user:{
+                  name:"new_admin",
+                  email: "email.com",
+                  password: "password"
+              }
+          }
+          json_response = JSON.parse(response.body)
+          token=json_response['token']
+        
+          put '/admin/confirm', params: {
+            token:token,
+            email:"useremail.com",
+            nickname:"name"
+          } 
+        
+         
+          # expect(response).to have_http_status(200)
+        expect(JSON.parse(response.body)).to eq ({"message"=>"Trader successfully registered"})
       end
     end
 

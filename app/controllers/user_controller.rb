@@ -28,8 +28,8 @@ class UserController < ApplicationController
             )
            
             if @trader.save 
-                @user.save
-                @request.save
+                # @user.save
+                # @request.save
                 render json: {message: "Trader successfully registered"}, status:200
             else
                 render json: {message: "Edit failed"},status:400
@@ -59,15 +59,13 @@ class UserController < ApplicationController
                         render json: { user:@user.name, token: @user.token, admin:true}, status: 200
                     else
                       
-                       if UserMailer.with(user: @user).welcome_email.deliver_now
+                        UserMailer.with(user: @user).welcome_email.deliver_now
                         render json: { user:@user.name, token: @user.token}, status: 200
-                       else
-                        render json: { message:"error"}, status: 400
-                       end
+                     
                     end
                
             else
-                render json:{ message: "Email invalid/duplicated", users:User.all}, status: 400
+                render json:{ message: "Email invalid/duplicated"}, status: 400
             end 
     
     end
@@ -120,7 +118,7 @@ private
         @user=User.find_by_token(params[:token])
         if @user
             unless @user.check?
-                render json: {error:"unauthorized"}
+                render json: {error:"unauthorized"}, status:400
             end
         else
             render json: {error:"invalid token"}, status:400

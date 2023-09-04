@@ -9,7 +9,7 @@ def user_request
                 :approved => false
             )
             if @request.save
-                    render json: 'Sent', status: 200
+                    render json: {message:'Sent'}, status: 200
             else
                     render json: {message: "Request failed"},status:400
             end
